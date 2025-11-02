@@ -51,18 +51,21 @@ def softmax_action(Q, state_key, n_actions, tau):
 def state_to_key(state):
     """
     Convert a state to an integer key suitable for indexing Q-tables or env arrays.
-    
+
     GridWorld states may come as:
         - numpy arrays (e.g., [row, col])
         - lists or tuples (e.g., (row, col))
         - already an integer (state index)
-    
+
     Returns:
         int: single integer representing the state
     """
+    # If it's a numpy array or list/tuple, flatten and return the first scalar element
     if isinstance(state, (np.ndarray, list, tuple)):
-        # Flatten in case it's multi-dimensional and take the first element
-        return int(np.ravel(state)[0])
+        flat = np.ravel(state)
+        if flat.size == 0:
+            raise ValueError("Empty state received")
+        return int(flat[0])
     return int(state)
 
 # ----------------------------
@@ -99,8 +102,10 @@ def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
         done = False
 
         while not done and steps < max_steps:
-            # Pass integer state index to env.step
-            rew, next_state = env.step(state_key, a)
+            # env.step returns (next_state, reward) in the GridWorld implementation
+            next_state, rew = env.step(state_key, a)
+            # ensure reward is a Python float (handles numpy arrays/shape (1,) etc.)
+            rew = float(np.array(rew).reshape(-1)[0])
             next_key = state_to_key(next_state)
             state_visit_counts[next_key] += 1
 
@@ -120,7 +125,8 @@ def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
             total_reward += rew
             steps += 1
 
-            if rew >= 10 or steps >= max_steps:
+            # terminal check: use reward threshold for goal (robust to float)
+            if rew >= float(env.r_goal) or steps >= max_steps:
                 done = True
 
         rewards_per_episode.append(total_reward)
@@ -167,8 +173,9 @@ def train_q_learning(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
             else:
                 a = random.randrange(n_actions)
 
-            # Pass integer state index
-            rew, next_state = env.step(state_key, a)
+            # env.step returns (next_state, reward)
+            next_state, rew = env.step(state_key, a)
+            rew = float(np.array(rew).reshape(-1)[0])
             next_key = state_to_key(next_state)
             state_visit_counts[next_key] += 1
 
@@ -179,7 +186,7 @@ def train_q_learning(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
             total_reward += rew
             steps += 1
 
-            if rew >= 10 or steps >= max_steps:
+            if rew >= float(env.r_goal) or steps >= max_steps:
                 done = True
 
         rewards_per_episode.append(total_reward)
@@ -210,6 +217,7 @@ def plot_training_curves(rewards, steps, title_prefix=''):
     plt.title(f'{title_prefix} Steps per Episode')
     plt.tight_layout()
     plt.show()
+
 def seq_to_row_col(env, state_index):
     """
     Convert a flattened state index to (row, col) for the GridWorld.
@@ -223,14 +231,14 @@ def seq_to_row_col(env, state_index):
         or single tuple (row, col) if input is int
     """
     if np.isscalar(state_index):
-        row = state_index // env.num_cols
-        col = state_index % env.num_cols
+        row = int(state_index) // env.num_cols
+        col = int(state_index) % env.num_cols
         return (row, col)
     else:
-        state_index = np.array(state_index)
+        state_index = np.array(state_index, dtype=int)
         rows = state_index // env.num_cols
         cols = state_index % env.num_cols
-        return list(zip(rows, cols))
+        return list(zip(rows.tolist(), cols.tolist()))
 
 def heatmap_state_visits(env, state_visit_counts, title='State Visit Heatmap'):
     """Create heatmap of state visits."""
@@ -273,19 +281,19 @@ def q_value_heatmap_and_policy(env, Q, title='Q-values and Derived Policy'):
     plt.title(title)
     plt.gca().invert_yaxis()
 
-    # Map action index to arrow directions
+    # Map action index to arrow directions (dx, dy)
     action_to_delta = {
-        0: (-0.4, 0.0),  # up
-        1: (0.4, 0.0),   # down
-        2: (0.0, -0.4),  # left
-        3: (0.0, 0.4),   # right
+        0: (0.0, -0.4),  # up    -> dx=0, dy=-0.4
+        1: (0.0, 0.4),   # down  -> dx=0, dy=0.4
+        2: (-0.4, 0.0),  # left  -> dx=-0.4, dy=0
+        3: (0.4, 0.0),   # right -> dx=0.4, dy=0
     }
 
     for r in range(rows):
         for c in range(cols):
             a = policy_grid[r, c]
             if a >= 0:
-                dy, dx = action_to_delta[a]
+                dx, dy = action_to_delta[int(a)]
                 plt.arrow(c + 0.5, r + 0.5, dx, dy,
                           head_width=0.12, head_length=0.12,
                           fc='k', ec='k')
