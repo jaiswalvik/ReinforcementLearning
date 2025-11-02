@@ -1,7 +1,7 @@
-# save this as starter_rl_gridworld.py
+# starter_ri_grid_world.py
 # Requirements:
-# numpy, matplotlib, seaborn, tqdm
-# pip install numpy matplotlib seaborn tqdm
+# numpy, matplotlib, seaborn, tqdm, wandb (optional)
+# pip install numpy matplotlib seaborn tqdm wandb
 
 import numpy as np
 import random
@@ -13,8 +13,11 @@ import math
 import pickle
 import os
 
+# Action constants
+UP, DOWN, LEFT, RIGHT = 0, 1, 2, 3
+
 # ----------------------------
-# Environment import
+# Environment import (env.py must provide create_standard_grid, create_four_room)
 # ----------------------------
 try:
     from env import create_standard_grid, create_four_room
@@ -32,8 +35,9 @@ def epsilon_greedy_action(Q, state_key, n_actions, epsilon):
     if random.random() < epsilon:
         return random.randrange(n_actions)
     q_vals = Q[state_key]
-    max_q = max(q_vals)
-    best_actions = [i for i, q in enumerate(q_vals) if q == max_q]
+    # q_vals may be list or numpy array
+    max_q = float(np.max(q_vals))
+    best_actions = [i for i, q in enumerate(q_vals) if float(q) == max_q]
     return random.choice(best_actions)
 
 def softmax_action(Q, state_key, n_actions, tau):
@@ -48,45 +52,61 @@ def softmax_action(Q, state_key, n_actions, tau):
     probs = exps / np.sum(exps)
     return int(np.random.choice(len(probs), p=probs))
 
-def state_to_key(state):
+def state_to_key(state, env=None):
     """
     Convert a state to an integer key suitable for indexing Q-tables or env arrays.
 
-    GridWorld states may come as:
-        - numpy arrays (e.g., [row, col])
-        - lists or tuples (e.g., (row, col))
-        - already an integer (state index)
-
-    Returns:
-        int: single integer representing the state
+    Handles:
+      - integer state index
+      - numpy array or list with single scalar (e.g., np.array([23]) or array(23))
+      - (row, col) tuple or list *if env is provided* (will convert to seq)
     """
-    # If it's a numpy array or list/tuple, flatten and return the first scalar element
-    if isinstance(state, (np.ndarray, list, tuple)):
+    if isinstance(state, (np.ndarray,)):
         flat = np.ravel(state)
-        if flat.size == 0:
-            raise ValueError("Empty state received")
-        return int(flat[0])
+        if flat.size == 1:
+            return int(flat[0])
+        # if it's (r,c) pair and env provided, convert
+        if flat.size == 2 and env is not None:
+            r, c = int(flat[0]), int(flat[1])
+            return int(r * env.num_cols + c)
+        raise ValueError(f"Unsupported numpy state shape: {state.shape}")
+    if isinstance(state, (list, tuple)):
+        if len(state) == 1:
+            return int(state[0])
+        if len(state) == 2 and env is not None:
+            r, c = int(state[0]), int(state[1])
+            return int(r * env.num_cols + c)
+        raise ValueError(f"Unsupported state list/tuple: {state}")
     return int(state)
+
+def is_goal_state(env, state_key):
+    """Return True if state_key corresponds to one of env's goal states."""
+    if hasattr(env, 'goal_states_seq'):
+        flat = np.ravel(env.goal_states_seq).astype(int)
+        return int(state_key) in set(flat.tolist())
+    return False
 
 # ----------------------------
 # SARSA implementation 
 # ----------------------------
 def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
-                max_steps=100, seed=None, record_every=1):
-    """Train SARSA on given env with integer state indices."""
+                max_steps=100, seed=None, record_every=1, wandb_run=None):
+    """Train SARSA on given env. Caller should create a fresh env per call for reproducibility."""
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
 
     n_actions = env.num_actions
-    Q = defaultdict(lambda: [0.0] * n_actions)
+    Q = defaultdict(lambda: np.zeros(n_actions, dtype=np.float64))
 
     rewards_per_episode = []
     steps_per_episode = []
     state_visit_counts = defaultdict(int)
 
     for ep in range(num_episodes):
-        state_key = state_to_key(env.start_state_seq)
+        # ensure environment start/goal reset behavior occurs
+        start_seq = env.reset()
+        state_key = state_to_key(start_seq, env)
         state_visit_counts[state_key] += 1
 
         # Choose initial action
@@ -102,14 +122,18 @@ def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
         done = False
 
         while not done and steps < max_steps:
-            # env.step returns (next_state, reward) in the GridWorld implementation
             next_state, rew = env.step(state_key, a)
-            # ensure reward is a Python float (handles numpy arrays/shape (1,) etc.)
+            # env.step in assignment returns (next_state, reward) — handle both orders if necessary
+            # If type indicates the first is reward (unlikely with provided env), try to detect:
+            if isinstance(next_state, (int, np.integer)) and (isinstance(rew, (float, np.floating, np.ndarray))):
+                # expected ordering (next_state, reward)
+                pass
+            # ensure reward is scalar float
             rew = float(np.array(rew).reshape(-1)[0])
-            next_key = state_to_key(next_state)
+            next_key = state_to_key(next_state, env)
             state_visit_counts[next_key] += 1
 
-            # Choose next action
+            # Choose next action (on-policy)
             if epsilon is not None:
                 a_next = epsilon_greedy_action(Q, next_key, n_actions, epsilon)
             elif tau is not None:
@@ -125,12 +149,19 @@ def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
             total_reward += rew
             steps += 1
 
-            # terminal check: use reward threshold for goal (robust to float)
-            if rew >= float(env.r_goal) or steps >= max_steps:
+            # terminal check
+            if is_goal_state(env, state_key) or steps >= max_steps:
                 done = True
 
         rewards_per_episode.append(total_reward)
         steps_per_episode.append(steps)
+
+        # optional logging to wandb
+        if wandb_run is not None and ((ep + 1) % record_every == 0):
+            wandb_run.log({"episode": ep + 1,
+                           "reward": total_reward,
+                           "steps": steps,
+                           "algorithm": "sarsa"})
 
     return {
         'Q': Q,
@@ -144,20 +175,21 @@ def train_sarsa(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
 # Q-Learning implementation 
 # ----------------------------
 def train_q_learning(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
-                     max_steps=100, seed=None):
-    """Train Q-learning on given env with integer state indices."""
+                     max_steps=100, seed=None, record_every=1, wandb_run=None):
+    """Train Q-learning on given env. Caller should create a fresh env per call for reproducibility."""
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
 
     n_actions = env.num_actions
-    Q = defaultdict(lambda: [0.0] * n_actions)
+    Q = defaultdict(lambda: np.zeros(n_actions, dtype=np.float64))
     rewards_per_episode = []
     steps_per_episode = []
     state_visit_counts = defaultdict(int)
 
     for ep in range(num_episodes):
-        state_key = state_to_key(env.start_state_seq)
+        start_seq = env.reset()
+        state_key = state_to_key(start_seq, env)
         state_visit_counts[state_key] += 1
 
         total_reward = 0.0
@@ -165,7 +197,7 @@ def train_q_learning(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
         done = False
 
         while not done and steps < max_steps:
-            # Choose action
+            # Choose action (off-policy)
             if epsilon is not None:
                 a = epsilon_greedy_action(Q, state_key, n_actions, epsilon)
             elif tau is not None:
@@ -173,24 +205,29 @@ def train_q_learning(env, num_episodes, alpha, gamma, epsilon=None, tau=None,
             else:
                 a = random.randrange(n_actions)
 
-            # env.step returns (next_state, reward)
             next_state, rew = env.step(state_key, a)
             rew = float(np.array(rew).reshape(-1)[0])
-            next_key = state_to_key(next_state)
+            next_key = state_to_key(next_state, env)
             state_visit_counts[next_key] += 1
 
-            # Q-learning update
-            Q[state_key][a] += alpha * (rew + gamma * max(Q[next_key]) - Q[state_key][a])
+            # Q-learning update (off-policy)
+            Q[state_key][a] += alpha * (rew + gamma * np.max(Q[next_key]) - Q[state_key][a])
 
             state_key = next_key
             total_reward += rew
             steps += 1
 
-            if rew >= float(env.r_goal) or steps >= max_steps:
+            if is_goal_state(env, state_key) or steps >= max_steps:
                 done = True
 
         rewards_per_episode.append(total_reward)
         steps_per_episode.append(steps)
+
+        if wandb_run is not None and ((ep + 1) % record_every == 0):
+            wandb_run.log({"episode": ep + 1,
+                           "reward": total_reward,
+                           "steps": steps,
+                           "algorithm": "qlearning"})
 
     return {
         'Q': Q,
@@ -221,14 +258,6 @@ def plot_training_curves(rewards, steps, title_prefix=''):
 def seq_to_row_col(env, state_index):
     """
     Convert a flattened state index to (row, col) for the GridWorld.
-
-    Args:
-        env: environment with num_cols
-        state_index: int or list/array of ints
-
-    Returns:
-        list of tuples [(row, col), ...] if input is array
-        or single tuple (row, col) if input is int
     """
     if np.isscalar(state_index):
         row = int(state_index) // env.num_cols
@@ -299,12 +328,16 @@ def q_value_heatmap_and_policy(env, Q, title='Q-values and Derived Policy'):
                           fc='k', ec='k')
     plt.show()
 
+
 # ----------------------------
 # Experiment runner (single config)
 # ----------------------------
 def run_single_experiment(env, algorithm='qlearning', algo_params=None,
-                          num_episodes=500, seed=0):
-    """Run a single SARSA or Q-learning experiment."""
+                          num_episodes=500, seed=0, wandb_run=None):
+    """
+    Run a single SARSA or Q-learning experiment.
+    Note: env should be a fresh environment object for each call (caller must recreate env per seed).
+    """
     if algo_params is None:
         algo_params = {}
     alpha = algo_params.get('alpha', 0.1)
@@ -314,12 +347,13 @@ def run_single_experiment(env, algorithm='qlearning', algo_params=None,
     max_steps = algo_params.get('max_steps', 100)
 
     if algorithm.lower() == 'qlearning':
-        res = train_q_learning(env, num_episodes, alpha, gamma, epsilon, tau, max_steps, seed)
+        res = train_q_learning(env, num_episodes, alpha, gamma, epsilon, tau, max_steps, seed, wandb_run=wandb_run)
     elif algorithm.lower() == 'sarsa':
-        res = train_sarsa(env, num_episodes, alpha, gamma, epsilon, tau, max_steps, seed)
+        res = train_sarsa(env, num_episodes, alpha, gamma, epsilon, tau, max_steps, seed, wandb_run=wandb_run)
     else:
         raise ValueError("Unknown algorithm")
     return res
+
 
 # ----------------------------
 # Example usage (smoke test)
@@ -342,27 +376,3 @@ if __name__ == '__main__':
                              title_prefix='Q-Learning (smoke test)')
         heatmap_state_visits(env, res['state_visit_counts'], title='Visits (smoke test)')
         q_value_heatmap_and_policy(env, res['Q'], title='Q-values (smoke test)')
-
-
-    # ----------------------------
-    # TODO (your tasks)
-    # ----------------------------
-    # 1) Run the full set of configurations described in the assignment:
-    #    - Standard grid: run Q-learning configs and SARSA configs by varying:
-    #       * transition_prob {0.7, 1.0} (Q-learning)
-    #       * start_state {(0,4), (3,6)}
-    #       * exploration {epsilon-greedy, softmax}
-    #       * wind False (Q-learning); wind True/False (SARSA)
-    #    - Four-room: goal_change True/False for both algorithms
-    #
-    # 2) For each configuration, do hyperparameter tuning over alpha, gamma, epsilon/tau sets in assignment.
-    #    For each hyperparameter tuple, run >=5 seeds and average results.
-    #
-    # 3) Save the best hyperparameters per configuration (based on avg reward or convergence).
-    #
-    # 4) Using best hyperparams, run 100 runs to produce final averaged plots:
-    #    - Training curves (avg reward per episode, avg steps per episode)
-    #    - State visit heatmap (averaged visits across runs)
-    #    - Q-value heatmap + overlayed policy
-    #
-    # 5) Package your report: key code snippets, hyperparameter tables, and the plots above.
