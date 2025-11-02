@@ -362,17 +362,69 @@ if __name__ == '__main__':
     if create_standard_grid is None:
         print("Env not available. Add the Grid-World-Environment repo to import env.")
     else:
+        # Create environment
         env = create_standard_grid(start_state=np.array([[0, 4]]),
                                    transition_prob=1.0,
                                    wind=False)
         print("Environment created: states:", env.num_states, "actions:", env.num_actions)
+
+        # Shared hyperparameters
         algo_params = {'alpha': 0.1, 'gamma': 0.9, 'epsilon': 0.05, 'max_steps': 100}
-        res = run_single_experiment(env, algorithm='qlearning',
-                                    algo_params=algo_params,
-                                    num_episodes=200, seed=42)
-        print("Avg reward (last 50 episodes):", np.mean(res['rewards_per_episode'][-50:]))
-        plot_training_curves(res['rewards_per_episode'],
-                             res['steps_per_episode'],
+
+        # ----------------------------
+        # Q-Learning Smoke Test
+        # ----------------------------
+        res_q = run_single_experiment(env,
+                                      algorithm='qlearning',
+                                      algo_params=algo_params,
+                                      num_episodes=200,
+                                      seed=42)
+        print("Q-Learning | Avg reward (last 50 episodes):",
+              np.mean(res_q['rewards_per_episode'][-50:]))
+        plot_training_curves(res_q['rewards_per_episode'],
+                             res_q['steps_per_episode'],
                              title_prefix='Q-Learning (smoke test)')
-        heatmap_state_visits(env, res['state_visit_counts'], title='Visits (smoke test)')
-        q_value_heatmap_and_policy(env, res['Q'], title='Q-values (smoke test)')
+        heatmap_state_visits(env, res_q['state_visit_counts'],
+                             title='Visits (Q-Learning)')
+        q_value_heatmap_and_policy(env, res_q['Q'], title='Q-values (Q-Learning)')
+
+        # ----------------------------
+        # SARSA Smoke Test
+        # ----------------------------
+        res_sarsa = run_single_experiment(env,
+                                          algorithm='sarsa',
+                                          algo_params=algo_params,
+                                          num_episodes=200,
+                                          seed=42)
+        print("SARSA | Avg reward (last 50 episodes):",
+              np.mean(res_sarsa['rewards_per_episode'][-50:]))
+        plot_training_curves(res_sarsa['rewards_per_episode'],
+                             res_sarsa['steps_per_episode'],
+                             title_prefix='SARSA (smoke test)')
+        heatmap_state_visits(env, res_sarsa['state_visit_counts'],
+                             title='Visits (SARSA)')
+        q_value_heatmap_and_policy(env, res_sarsa['Q'], title='Q-values (SARSA)')
+
+        # ----------------------------
+        # Comparison Plot
+        # ----------------------------
+        try:
+            plot_comparison(
+                [res_q, res_sarsa],
+                labels=['Q-Learning', 'SARSA'],
+                metric='rewards_per_episode',
+                title='Reward Comparison: Q-Learning vs SARSA'
+            )
+        except NameError:
+            import matplotlib.pyplot as plt
+            # Fallback simple comparison if plot_comparison() is not defined
+            plt.figure(figsize=(8, 5))
+            plt.plot(res_q['rewards_per_episode'], label='Q-Learning')
+            plt.plot(res_sarsa['rewards_per_episode'], label='SARSA')
+            plt.xlabel('Episode')
+            plt.ylabel('Total Reward')
+            plt.title('Reward Comparison: Q-Learning vs SARSA')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+
