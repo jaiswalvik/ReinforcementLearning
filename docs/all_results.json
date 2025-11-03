@@ -1,0 +1,390 @@
+[
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 0.7,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.01,
+            "final_reward": -37.052
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 0.7,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.01,
+            "final_reward": -32.104
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 0.7,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.001,
+            "final_reward": -26.252
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 0.7,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.01,
+            "final_reward": -37.547999999999995
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.9,
+            "exp_param": 0.001,
+            "final_reward": -6.024
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.9,
+            "exp_param": 0.1,
+            "final_reward": -6.0
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.001,
+            "final_reward": -1.0
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "q_learning",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.7,
+            "exp_param": 0.01,
+            "final_reward": -1.0
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": true
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 1.0,
+            "exp_param": 0.001,
+            "final_reward": -8.783999999999999
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": true
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.9,
+            "exp_param": 0.01,
+            "final_reward": -9.975999999999999
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": true
+        },
+        "best_params": {
+            "alpha": 0.1,
+            "gamma": 1.0,
+            "exp_param": 0.001,
+            "final_reward": -4.468
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": true
+        },
+        "best_params": {
+            "alpha": 0.1,
+            "gamma": 0.9,
+            "exp_param": 0.01,
+            "final_reward": -4.295999999999999
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.8,
+            "exp_param": 0.001,
+            "final_reward": -6.98
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    0,
+                    4
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.9,
+            "exp_param": 0.1,
+            "final_reward": -6.0
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "epsilon_greedy",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.7,
+            "exp_param": 0.001,
+            "final_reward": -2.092
+        }
+    },
+    {
+        "config": {
+            "env_type": "standard",
+            "algo": "sarsa",
+            "transition_prob": 1.0,
+            "start_state": [
+                [
+                    3,
+                    6
+                ]
+            ],
+            "exploration": "softmax",
+            "wind": false
+        },
+        "best_params": {
+            "alpha": 1.0,
+            "gamma": 0.7,
+            "exp_param": 0.01,
+            "final_reward": -1.0
+        }
+    },
+    {
+        "config": {
+            "env_type": "four_room",
+            "algo": "q_learning",
+            "goal_change": true
+        },
+        "best_params": {
+            "alpha": 0.001,
+            "gamma": 0.7,
+            "exp_param": 0.1,
+            "final_reward": -139.16
+        }
+    },
+    {
+        "config": {
+            "env_type": "four_room",
+            "algo": "sarsa",
+            "goal_change": true
+        },
+        "best_params": {
+            "alpha": 0.001,
+            "gamma": 0.7,
+            "exp_param": 0.1,
+            "final_reward": -139.46
+        }
+    },
+    {
+        "config": {
+            "env_type": "four_room",
+            "algo": "q_learning",
+            "goal_change": false
+        },
+        "best_params": {
+            "alpha": 0.001,
+            "gamma": 0.7,
+            "exp_param": 0.1,
+            "final_reward": -139.304
+        }
+    },
+    {
+        "config": {
+            "env_type": "four_room",
+            "algo": "sarsa",
+            "goal_change": false
+        },
+        "best_params": {
+            "alpha": 0.001,
+            "gamma": 0.7,
+            "exp_param": 0.1,
+            "final_reward": -139.97600000000003
+        }
+    }
+]

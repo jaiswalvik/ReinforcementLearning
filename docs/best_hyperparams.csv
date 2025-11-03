@@ -1,0 +1,21 @@
+Environment,Algorithm,Exploration,Best α,Best γ,Best ε/τ,Final Reward
+standard,q_learning,epsilon_greedy,1.0,1.0,0.01,-37.052
+standard,q_learning,softmax,1.0,1.0,0.01,-32.104
+standard,q_learning,epsilon_greedy,1.0,1.0,0.001,-26.252
+standard,q_learning,softmax,1.0,1.0,0.01,-37.548
+standard,q_learning,epsilon_greedy,1.0,0.9,0.001,-6.024
+standard,q_learning,softmax,1.0,0.9,0.1,-6.0
+standard,q_learning,epsilon_greedy,1.0,1.0,0.001,-1.0
+standard,q_learning,softmax,1.0,0.7,0.01,-1.0
+standard,sarsa,epsilon_greedy,1.0,1.0,0.001,-8.784
+standard,sarsa,softmax,1.0,0.9,0.01,-9.976
+standard,sarsa,epsilon_greedy,0.1,1.0,0.001,-4.468
+standard,sarsa,softmax,0.1,0.9,0.01,-4.296
+standard,sarsa,epsilon_greedy,1.0,0.8,0.001,-6.98
+standard,sarsa,softmax,1.0,0.9,0.1,-6.0
+standard,sarsa,epsilon_greedy,1.0,0.7,0.001,-2.092
+standard,sarsa,softmax,1.0,0.7,0.01,-1.0
+four_room,q_learning,default,0.001,0.7,0.1,-139.16
+four_room,sarsa,default,0.001,0.7,0.1,-139.46
+four_room,q_learning,default,0.001,0.7,0.1,-139.304
+four_room,sarsa,default,0.001,0.7,0.1,-139.976
