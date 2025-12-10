@@ -508,10 +508,15 @@ def save_qtable(Q, filename):
     print(f"Saved Q-table to {filename}")
 
 # -------------------------------------------------------
-def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards):
+def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards, outdir="out"):
+    ensure_dir(outdir)
+    timestamp = int(time.time())
+
+    # -------- Reward Curve Plot --------
     window = 25
     sm_smooth, sm_centers = smooth(sm_rewards, window=window)
     io_smooth, io_centers = smooth(io_rewards, window=window)
+
     plt.figure(figsize=(10, 4))
     plt.plot(np.arange(len(sm_rewards)), sm_rewards, alpha=0.2, label="SMDP Q (raw)")
     plt.plot(np.arange(len(io_rewards)), io_rewards, alpha=0.2, label="Intra-option (raw)")
@@ -525,8 +530,13 @@ def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards):
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
+
+    fname = os.path.join(outdir, f"reward_curves_{timestamp}.png")
+    plt.savefig(fname)
+    print(f"Saved reward curves to {fname}")
     plt.show()
 
+    # -------- SMDP Heatmap --------
     plt.figure(figsize=(8, 6))
     plt.imshow(smdp_agent.Q, aspect="auto")
     plt.colorbar()
@@ -534,8 +544,13 @@ def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards):
     plt.xlabel("Option")
     plt.ylabel("State")
     plt.tight_layout()
+
+    fname = os.path.join(outdir, f"smdp_heatmap_{timestamp}.png")
+    plt.savefig(fname)
+    print(f"Saved SMDP heatmap to {fname}")
     plt.show()
 
+    # -------- Intra-option Heatmap --------
     plt.figure(figsize=(8, 6))
     plt.imshow(io_agent.Q, aspect="auto")
     plt.colorbar()
@@ -543,14 +558,19 @@ def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards):
     plt.xlabel("Option")
     plt.ylabel("State")
     plt.tight_layout()
+
+    fname = os.path.join(outdir, f"intra_heatmap_{timestamp}.png")
+    plt.savefig(fname)
+    print(f"Saved Intra-option heatmap to {fname}")
     plt.show()
 
+    # -------- Option Histograms --------
     best_smdp = np.argmax(smdp_agent.Q, axis=1)
     best_io = np.argmax(io_agent.Q, axis=1)
+    n_opts = smdp_agent.Q.shape[1]
 
     plt.figure(figsize=(10, 4))
     plt.subplot(1, 2, 1)
-    n_opts = smdp_agent.Q.shape[1]
     plt.hist(best_smdp, bins=np.arange(-0.5, n_opts + 0.5, 1), rwidth=0.8)
     plt.title("SMDP Best Option Frequency")
     plt.xlabel("Option")
@@ -563,8 +583,13 @@ def plot_after_training(env, smdp_agent, io_agent, sm_rewards, io_rewards):
     plt.ylabel("Count")
 
     plt.tight_layout()
+
+    fname = os.path.join(outdir, f"option_histograms_{timestamp}.png")
+    plt.savefig(fname)
+    print(f"Saved option histograms to {fname}")
     plt.show()
 
+    # -------- State decode printout --------
     max_state = env.observation_space.n - 1
     sample_states = [0, 50, 100, 200, 350]
     sample_states = [min(max_state, s) for s in sample_states]
